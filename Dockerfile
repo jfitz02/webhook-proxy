@@ -9,6 +9,6 @@ FROM mcr.microsoft.com/openjdk/jdk:25-ubuntu
 ENV APP_HOME=/usr/app/
 WORKDIR $APP_HOME
 
-COPY --from=build /usr/app/build/libs/*-SNAPSHOT.jar app.jar
+COPY --from=build /usr/app/build/libs/*.jar app.jar
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
