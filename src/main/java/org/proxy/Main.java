@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
     private static final Logger log = LogManager.getLogger(Main.class);
-    private static final Set<String> IGNORE_HEADERS = Set.of("Host");
+    private static final Set<String> IGNORE_HEADERS = Set.of("Host", "Content-length");
 
     static void main() throws IOException, InterruptedException {
         Metrics.initialize();
