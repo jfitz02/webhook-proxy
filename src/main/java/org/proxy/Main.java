@@ -43,13 +43,13 @@ public class Main {
         }
 
         server.createContext("/", exchange -> {
-            log.info("Received request from: {}. With headers: {}",
+            String path = exchange.getRequestURI().getPath();
+            log.info("Received request from: {}. For {}. With headers: {}",
                     exchange.getRemoteAddress(),
+                    path,
                     exchange.getRequestHeaders().entrySet().stream()
                         .map(entry -> entry.getKey() + "=" + String.join(",", entry.getValue()))
                         .collect(Collectors.joining("\t")));
-
-            String path = exchange.getRequestURI().getPath();
 
             if (!config.proxyMappings().containsKey(path)) {
                 Metrics.getWebhookRequestsTotal().labelValues("false").inc();
