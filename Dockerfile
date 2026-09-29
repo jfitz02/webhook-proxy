@@ -11,4 +11,6 @@ WORKDIR $APP_HOME
 
 COPY --from=build /usr/app/build/libs/*.jar app.jar
 
+EXPOSE 8080
+
 ENTRYPOINT ["java", "-jar", "app.jar"]
