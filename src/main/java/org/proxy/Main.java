@@ -1,8 +1,13 @@
-package org.example;
+package org.proxy;
 
-import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import io.prometheus.metrics.core.metrics.Counter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.proxy.config.AppConfig;
+import org.proxy.config.ConfigLoader;
+import org.proxy.metrics.Metrics;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -14,17 +19,20 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
+    private static final Logger log = LogManager.getLogger(Main.class);
+
     private static final String TARGET_ENDPOINT = "https://portainer.internal.fitzmaurice.me";
     private static final Set<String> IGNORE_HEADERS = Set.of("Host");
 
-    static void main() {
-        Map<String, String> webhookMapping = Map.of(
-                "/hello", "/api/stacks/webhooks/2a933c8a-e9d6-492a-906a-a69e7dfc4c9b"
-        );
+    static void main() throws IOException, InterruptedException {
+        Metrics.initialize();
+        AppConfig config = ConfigLoader.load();
+
         HttpServer server;
         try {
              server = HttpServer.create(
@@ -32,25 +40,35 @@ public class Main {
                     0
             );
         } catch (IOException e) {
+            log.error("Failed to start HTTP Server", e);
             throw new RuntimeException(e);
         }
 
         server.createContext("/", exchange -> {
+            log.info("Received request from: {}. With headers: {}",
+                    exchange.getRemoteAddress(),
+                    exchange.getRequestHeaders().entrySet().stream()
+                        .map(entry -> entry.getKey() + "=" + String.join(",", entry.getValue()))
+                        .collect(Collectors.joining("\t")));
+
             String path = exchange.getRequestURI().getPath();
 
-            if (!webhookMapping.containsKey(path)) {
+            if (!config.proxyMappings().containsKey(path)) {
+                Metrics.getWebhookRequestsTotal().labelValues("false").inc();
                 sendWebhookNotFound(exchange);
             } else {
-                forwardWebhook(exchange, webhookMapping.get(path));
+                Metrics.getWebhookRequestsTotal().labelValues("true").inc();
+                forwardWebhook(exchange, config.proxyMappings().get(path));
             }
         });
 
         server.start();
 
-        System.out.println("Server running on http://localhost:8080");
+        log.info("Server running on http://localhost:8080");
     }
 
     static void sendWebhookNotFound(HttpExchange exchange) throws IOException {
+        log.debug("Request webhook endpoint not found {}", exchange.getRequestURI());
         String response = "Page Not Found!";
         exchange.sendResponseHeaders(404, response.length());
 
@@ -60,6 +78,10 @@ public class Main {
     }
 
     static void forwardWebhook(HttpExchange exchange, String newPath) throws IOException {
+        log.debug("Request map found {} -> {}", exchange.getRequestURI(), newPath);
+
+
+
         HttpResponse<String> response;
 
         try (HttpClient client = HttpClient.newHttpClient()) {
@@ -80,6 +102,7 @@ public class Main {
                     HttpResponse.BodyHandlers.ofString()
             );
         } catch (Exception e) {
+            log.error("Failed to forward webhook request", e);
             throw new RuntimeException(e);
         }
 

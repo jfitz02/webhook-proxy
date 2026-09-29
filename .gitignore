@@ -44,3 +44,6 @@ bin/
 
 ## Idea
 **/.idea/**
+
+## config
+*.local.yml
