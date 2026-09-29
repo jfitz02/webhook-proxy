@@ -25,8 +25,6 @@ import java.util.stream.Collectors;
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 public class Main {
     private static final Logger log = LogManager.getLogger(Main.class);
-
-    private static final String TARGET_ENDPOINT = "https://portainer.internal.fitzmaurice.me";
     private static final Set<String> IGNORE_HEADERS = Set.of("Host");
 
     static void main() throws IOException, InterruptedException {
@@ -87,7 +85,7 @@ public class Main {
         try (HttpClient client = HttpClient.newHttpClient()) {
             HttpRequest.Builder builder = HttpRequest.newBuilder()
                     .method(exchange.getRequestMethod(), HttpRequest.BodyPublishers.ofInputStream(() -> exchange.getRequestBody()))
-                    .uri(URI.create(TARGET_ENDPOINT + newPath));
+                    .uri(URI.create(newPath));
 
             exchange.getRequestHeaders().forEach(
                     (name, values) -> values.forEach(
