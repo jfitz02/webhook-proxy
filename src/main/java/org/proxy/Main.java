@@ -114,6 +114,8 @@ public class Main {
 
         try (OutputStream os = exchange.getResponseBody()) {
             os.write(body);
+        } catch (Exception e) {
+            log.error("Failed to write body to response", e);
         }
     }
 }
