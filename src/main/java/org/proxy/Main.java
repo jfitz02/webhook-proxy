@@ -104,10 +104,6 @@ public class Main {
             throw new RuntimeException(e);
         }
 
-        response.headers().map().forEach((name, values) -> {
-            values.forEach(value -> exchange.getResponseHeaders().add(name, value));
-        });
-
         byte[] body = response.body().getBytes(StandardCharsets.UTF_8);
 
         exchange.sendResponseHeaders(response.statusCode(), body.length);
